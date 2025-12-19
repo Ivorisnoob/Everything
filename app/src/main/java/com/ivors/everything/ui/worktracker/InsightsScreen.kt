@@ -24,9 +24,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
-import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Today
 import androidx.compose.material.icons.outlined.Analytics
 import androidx.compose.material.icons.outlined.CalendarViewMonth
 import androidx.compose.material.icons.outlined.CalendarViewWeek
@@ -34,17 +32,12 @@ import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.EditCalendar
 import androidx.compose.material3.Badge
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDefaults
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DateRangePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeFlexibleTopAppBar
@@ -61,8 +54,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
-import androidx.compose.material3.ToggleButton
-import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.material3.rememberTooltipState
@@ -80,12 +71,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -98,6 +85,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.time.temporal.TemporalAdjusters
 import java.util.Locale
+import java.util.SortedMap
 import kotlinx.coroutines.flow.collect
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -148,7 +136,7 @@ fun InsightsScreen(
                 },
                 subtitle = {
                     Text(
-                        text = "Analytics & Statistics",
+                        text = "Your productivity journey",
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -161,28 +149,27 @@ fun InsightsScreen(
                         state = rememberTooltipState()
                     ) {
                         IconButton(onClick = onBack) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack, 
-                                contentDescription = "Back"
-                            )
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
                     }
                 },
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.largeTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surface
+                    containerColor = Color.Transparent,
+                    scrolledContainerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
-        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = MaterialTheme.colorScheme.surface
     ) { innerPadding ->
         LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .background(MaterialTheme.colorScheme.surface),
-            contentPadding = PaddingValues(bottom = 32.dp)
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                top = innerPadding.calculateTopPadding(),
+                bottom = innerPadding.calculateBottomPadding() + 32.dp
+            )
         ) {
             // Range Selector using SingleChoiceSegmentedButtonRow
             item {
@@ -237,47 +224,56 @@ fun InsightsScreen(
                 }
             }
             
-            // Date Range Display
-            if (rangeType == RangeType.Custom || rangeType != RangeType.Week) {
-                item {
-                    ElevatedCard(
-                        onClick = { if (rangeType == RangeType.Custom) showDatePicker = true },
+            // Date Range Display Card
+            item {
+                ElevatedCard(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.elevatedCardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
+                    ),
+                    onClick = { if (rangeType == RangeType.Custom) showDatePicker = true }
+                ) {
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 16.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.elevatedCardColors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                        )
+                            .padding(20.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
+                        Surface(
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier.size(40.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Filled.DateRange,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = "${currentRangeStart.format(DateTimeFormatter.ofPattern("MMM d"))} - ${endDate.format(DateTimeFormatter.ofPattern("MMM d, yyyy"))}",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
-                            )
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Filled.DateRange,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
                         }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text(
+                            text = if (rangeType == RangeType.Month) 
+                                currentRangeStart.format(DateTimeFormatter.ofPattern("MMMM yyyy"))
+                            else if (rangeType == RangeType.Year)
+                                currentRangeStart.format(DateTimeFormatter.ofPattern("yyyy"))
+                            else
+                                "${currentRangeStart.format(DateTimeFormatter.ofPattern("MMM d"))} - ${endDate.format(DateTimeFormatter.ofPattern("MMM d, yyyy"))}",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
                     }
                 }
             }
             
             // Stats Chart
             item {
-                Spacer(modifier = Modifier.height(16.dp))
                 InsightsChart(
                     stats = stats,
                     rangeType = rangeType,
@@ -333,7 +329,8 @@ fun InsightsScreen(
                 TextButton(onClick = { showDatePicker = false }) {
                     Text("Cancel")
                 }
-            }
+            },
+            shape = RoundedCornerShape(28.dp)
         ) {
             DateRangePicker(
                 state = dateRangePickerState,
@@ -343,8 +340,16 @@ fun InsightsScreen(
                 title = {
                     Text(
                         text = "Select Date Range",
-                        modifier = Modifier.padding(16.dp),
-                        style = MaterialTheme.typography.titleLarge
+                        modifier = Modifier.padding(24.dp, 24.dp, 24.dp, 12.dp),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                },
+                headline = {
+                    Text(
+                        text = "Range Selection",
+                        modifier = Modifier.padding(horizontal = 24.dp),
+                        style = MaterialTheme.typography.headlineMedium
                     )
                 }
             )
@@ -362,11 +367,10 @@ private fun InsightsChart(
     val totalHours = stats.values.sum()
     val maxHours = (stats.values.maxOrNull() ?: 1.0).coerceAtLeast(8.0)
     
-    // Calculate progress based on range type
     val expectedHours = when (rangeType) {
         RangeType.Week -> 40.0
         RangeType.Month -> 160.0
-        RangeType.Year -> 2000.0
+        RangeType.Year -> 1920.0
         RangeType.Custom -> (stats.size * 8).toDouble().coerceAtLeast(8.0)
     }
     val progressRatio = (totalHours / expectedHours).coerceIn(0.0, 1.0).toFloat()
@@ -384,45 +388,43 @@ private fun InsightsChart(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
+        Column(modifier = Modifier.padding(24.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Surface(
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                    modifier = Modifier.size(36.dp)
+                    modifier = Modifier.size(44.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.TrendingUp,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                 }
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(16.dp))
                 Column {
                     Text(
-                        text = "${rangeType.name} Overview",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer
+                        text = "${rangeType.name} Productivity",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = "${stats.size} days with activity",
+                        text = "${stats.size} records found",
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
                 }
             }
             
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(28.dp))
             
-            // Wavy Progress Indicator
-            val strokeWidthPx = with(LocalDensity.current) { 8.dp.toPx() }
+            val strokeWidthPx = with(LocalDensity.current) { 12.dp.toPx() }
             val thickStroke = remember(strokeWidthPx) {
                 Stroke(width = strokeWidthPx, cap = StrokeCap.Round)
             }
@@ -431,38 +433,43 @@ private fun InsightsChart(
                 progress = { animatedProgress },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(14.dp),
+                    .height(20.dp),
                 color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
                 stroke = thickStroke,
                 trackStroke = thickStroke
             )
             
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
             
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                Badge(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ) {
+                    Text(
+                        text = "${(animatedProgress * 100).toInt()}% achieved",
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
                 Text(
-                    text = "${(animatedProgress * 100).toInt()}% of target",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
-                )
-                Text(
-                    text = "${String.format(Locale.getDefault(), "%.0f", expectedHours)}h goal",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                    text = "Target: ${String.format(Locale.getDefault(), "%.0f", expectedHours)}h",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             
             if (stats.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(32.dp))
                 
-                // Bar Chart
                 val sortedStats = stats.toSortedMap()
                 val displayStats = if (stats.size > 14) {
-                    // For large datasets, show first 7 and last 7 entries
                     val entries = sortedStats.entries.toList()
                     (entries.take(7) + entries.takeLast(7)).associate { it.key to it.value }
                 } else {
@@ -472,7 +479,7 @@ private fun InsightsChart(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(140.dp),
+                        .height(150.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.Bottom
                 ) {
@@ -484,21 +491,11 @@ private fun InsightsChart(
                             val heightRatio = (hours / maxHours).toFloat()
                             val isToday = date == LocalDate.now()
                             
-                            // Hours label on top
-                            if (hours > 0) {
-                                Text(
-                                    text = String.format(Locale.getDefault(), "%.1f", hours),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.8f)
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(4.dp))
-                            
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth(0.7f)
-                                    .fillMaxHeight(heightRatio.coerceAtLeast(0.03f))
-                                    .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
+                                    .fillMaxHeight(heightRatio.coerceAtLeast(0.05f))
+                                    .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
                                     .background(
                                         if (isToday)
                                             Brush.verticalGradient(
@@ -510,13 +507,13 @@ private fun InsightsChart(
                                         else
                                             Brush.verticalGradient(
                                                 listOf(
-                                                    MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f),
-                                                    MaterialTheme.colorScheme.secondary.copy(alpha = 0.3f)
+                                                    MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
+                                                    MaterialTheme.colorScheme.secondary.copy(alpha = 0.15f)
                                                 )
                                             )
                                     )
                             )
-                            Spacer(modifier = Modifier.height(6.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
                             Text(
                                 text = when (rangeType) {
                                     RangeType.Week -> date.dayOfWeek.getDisplayName(TextStyle.NARROW, Locale.getDefault())
@@ -528,7 +525,7 @@ private fun InsightsChart(
                                 color = if (isToday) 
                                     MaterialTheme.colorScheme.primary 
                                 else 
-                                    MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.6f)
+                                    MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                             )
                         }
                     }
@@ -547,42 +544,40 @@ private fun SummaryCard(
     val totalHours = stats.values.sum()
     val avgHours = if (stats.isNotEmpty()) totalHours / stats.size else 0.0
     val maxHours = stats.values.maxOrNull() ?: 0.0
-    val minHours = stats.values.filter { it > 0 }.minOrNull() ?: 0.0
     
     ElevatedCard(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
         )
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
+        Column(modifier = Modifier.padding(24.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Surface(
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f),
-                    modifier = Modifier.size(36.dp)
+                    color = MaterialTheme.colorScheme.tertiaryContainer,
+                    modifier = Modifier.size(40.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = Icons.Outlined.Analytics,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.tertiary,
-                            modifier = Modifier.size(20.dp)
+                            tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                            modifier = Modifier.size(22.dp)
                         )
                     }
                 }
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(16.dp))
                 Text(
-                    text = "Summary",
+                    text = "Performance Summary",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
             }
             
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             
-            // Stats Grid
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
@@ -594,26 +589,13 @@ private fun SummaryCard(
                 )
                 StatItem(
                     value = String.format(Locale.getDefault(), "%.1f", avgHours),
-                    label = "Daily Avg",
+                    label = "Average/Day",
                     color = MaterialTheme.colorScheme.secondary
                 )
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
                 StatItem(
                     value = String.format(Locale.getDefault(), "%.1f", maxHours),
-                    label = "Best Day",
+                    label = "Peak Day",
                     color = MaterialTheme.colorScheme.tertiary
-                )
-                StatItem(
-                    value = String.format(Locale.getDefault(), "%.1f", minHours),
-                    label = "Shortest",
-                    color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
                 )
             }
         }
@@ -639,8 +621,9 @@ private fun StatItem(
         )
         Text(
             text = label,
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+            textAlign = TextAlign.Center
         )
     }
 }

@@ -7,7 +7,6 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,12 +29,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Login
 import androidx.compose.material.icons.outlined.Analytics
 import androidx.compose.material.icons.outlined.ExitToApp
 import androidx.compose.material.icons.outlined.Login
 import androidx.compose.material3.Badge
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonGroup
 import androidx.compose.material3.ButtonGroupDefaults
@@ -45,7 +44,6 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeFlexibleTopAppBar
@@ -76,24 +74,20 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.ivors.everything.data.WorkLog
 import java.time.Instant
-import java.time.LocalDate
 import java.time.ZoneId
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
+import java.util.SortedMap
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -141,28 +135,33 @@ fun WorkTrackerScreen(
                 },
                 titleHorizontalAlignment = Alignment.Start,
                 colors = TopAppBarDefaults.largeTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    containerColor = Color.Transparent, // Let the background show through
                     scrolledContainerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ),
                 scrollBehavior = scrollBehavior
             )
         },
-        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection)
+        modifier = modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = MaterialTheme.colorScheme.surface // Standard scaffold color
     ) { innerPadding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
-                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
                             MaterialTheme.colorScheme.surface
                         )
                     )
                 ),
-            contentPadding = PaddingValues(bottom = 32.dp)
+            contentPadding = PaddingValues(
+                top = innerPadding.calculateTopPadding(),
+                bottom = innerPadding.calculateBottomPadding() + 32.dp,
+                start = 0.dp,
+                end = 0.dp
+            )
         ) {
             // Insights Section
             item {
@@ -172,13 +171,13 @@ fun WorkTrackerScreen(
                 )
             }
             
-            // Action Buttons using ButtonGroup
+            // Action Buttons using ButtonGroup (Expressive Layout)
             item {
                 ExpressiveActions(
                     onWalkIn = { viewModel.walkIn() },
                     onWalkOut = { viewModel.walkOut() },
                     onViewInsights = onNavigateToInsights,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    modifier = Modifier.padding(16.dp)
                 )
             }
 
@@ -189,7 +188,7 @@ fun WorkTrackerScreen(
                     onClick = { showCalendar = !showCalendar },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp)
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
                         .animateContentSize(
                             animationSpec = spring(
                                 dampingRatio = Spring.DampingRatioMediumBouncy,
@@ -197,7 +196,7 @@ fun WorkTrackerScreen(
                             )
                         ),
                     colors = CardDefaults.elevatedCardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
                     ),
                     shape = RoundedCornerShape(28.dp)
                 ) {
@@ -247,7 +246,8 @@ fun WorkTrackerScreen(
                             ) {
                                 Text(
                                     text = if (showCalendar) "Hide" else "Change",
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                    style = MaterialTheme.typography.labelMedium
                                 )
                             }
                         }
@@ -273,13 +273,13 @@ fun WorkTrackerScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 24.dp, vertical = 8.dp),
+                        .padding(horizontal = 24.dp, vertical = 16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
                         text = "Activity Log",
-                        style = MaterialTheme.typography.titleLarge,
+                        style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.ExtraBold
                     )
                     Badge(
@@ -288,8 +288,8 @@ fun WorkTrackerScreen(
                     ) {
                         Text(
                             text = "${logs.size} events",
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            style = MaterialTheme.typography.labelMedium
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                            style = MaterialTheme.typography.labelLarge
                         )
                     }
                 }
@@ -301,7 +301,7 @@ fun WorkTrackerScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp)
-                            .height(160.dp),
+                            .height(180.dp),
                         shape = RoundedCornerShape(24.dp)
                     ) {
                         Box(
@@ -312,10 +312,10 @@ fun WorkTrackerScreen(
                                 Icon(
                                     imageVector = Icons.Outlined.Analytics,
                                     contentDescription = null,
-                                    modifier = Modifier.size(48.dp),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                                    modifier = Modifier.size(64.dp),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
                                 )
-                                Spacer(modifier = Modifier.height(12.dp))
+                                Spacer(modifier = Modifier.height(16.dp))
                                 Text(
                                     text = "No logs recorded for this day",
                                     style = MaterialTheme.typography.bodyLarge,
@@ -347,7 +347,7 @@ fun WorkInsights(
 ) {
     val totalHours = weeklyHours.values.sum()
     val maxHours = (weeklyHours.values.maxOrNull() ?: 1.0).coerceAtLeast(8.0)
-    val progressRatio = (totalHours / 40.0).coerceIn(0.0, 1.0).toFloat() // Assuming 40hr work week
+    val progressRatio = (totalHours / 40.0).coerceIn(0.0, 1.0).toFloat()
     
     val animatedProgress by animateFloatAsState(
         targetValue = progressRatio,
@@ -362,38 +362,43 @@ fun WorkInsights(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.elevatedCardColors(
-            containerColor = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.5f)
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
+        Column(modifier = Modifier.padding(24.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Surface(
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                    modifier = Modifier.size(36.dp)
+                    modifier = Modifier.size(40.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.TrendingUp,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                 }
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = "Weekly Efficiency",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
-                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    Text(
+                        text = "Weekly Efficiency",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Goal: 40 hours",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
             
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             
-            // Wavy Progress Indicator for weekly goal
-            val strokeWidthPx = with(LocalDensity.current) { 6.dp.toPx() }
+            val strokeWidthPx = with(LocalDensity.current) { 10.dp.toPx() }
             val thickStroke = remember(strokeWidthPx) {
                 Stroke(width = strokeWidthPx, cap = StrokeCap.Round)
             }
@@ -402,22 +407,23 @@ fun WorkInsights(
                 progress = { animatedProgress },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(12.dp),
+                    .height(18.dp),
                 color = MaterialTheme.colorScheme.primary,
                 trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
                 stroke = thickStroke,
                 trackStroke = thickStroke
             )
             
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             
             Text(
-                text = "${(animatedProgress * 100).toInt()}% of weekly goal",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                text = "${(animatedProgress * 100).toInt()}% towards goal",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary
             )
             
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(24.dp))
             
             // Bar Chart
             Row(
@@ -437,9 +443,9 @@ fun WorkInsights(
                         
                         Box(
                             modifier = Modifier
-                                .fillMaxWidth(0.6f)
+                                .fillMaxWidth(0.65f)
                                 .fillMaxHeight(heightRatio.coerceAtLeast(0.05f))
-                                .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp))
+                                .clip(RoundedCornerShape(topStart = 10.dp, topEnd = 10.dp))
                                 .background(
                                     if (isToday)
                                         Brush.verticalGradient(
@@ -451,8 +457,8 @@ fun WorkInsights(
                                     else
                                         Brush.verticalGradient(
                                             listOf(
-                                                MaterialTheme.colorScheme.secondary.copy(alpha = 0.5f),
-                                                MaterialTheme.colorScheme.secondary.copy(alpha = 0.2f)
+                                                MaterialTheme.colorScheme.secondary.copy(alpha = 0.4f),
+                                                MaterialTheme.colorScheme.secondary.copy(alpha = 0.1f)
                                             )
                                         )
                                 )
@@ -465,58 +471,7 @@ fun WorkInsights(
                             color = if (isToday) 
                                 MaterialTheme.colorScheme.primary 
                             else 
-                                MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.6f)
-                        )
-                    }
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            // Summary Row
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.05f)
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = String.format(Locale.getDefault(), "%.1f", totalHours),
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = "hours",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.6f)
-                        )
-                    }
-                    
-                    Surface(
-                        modifier = Modifier
-                            .width(1.dp)
-                            .height(40.dp),
-                        color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.2f)
-                    ) {}
-                    
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        val avgHours = if (weeklyHours.isNotEmpty()) totalHours / weeklyHours.size else 0.0
-                        Text(
-                            text = String.format(Locale.getDefault(), "%.1f", avgHours),
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.secondary
-                        )
-                        Text(
-                            text = "avg/day",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.6f)
+                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                         )
                     }
                 }
@@ -538,26 +493,24 @@ fun ExpressiveActions(
     val scope = androidx.compose.runtime.rememberCoroutineScope()
 
     Column(modifier = modifier.fillMaxWidth()) {
-        // Action buttons using ToggleButtons with expressive shape morphing
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 8.dp),
+        // Proper ButtonGroup with connected ToggleButtons as per M3 docs
+        ButtonGroup(
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween)
         ) {
-            // Walk In Button with expressive shapes
+            // Using ToggleButton with connected shapes and animateWidth for expressive feedback
             ToggleButton(
                 checked = walkingIn,
                 onCheckedChange = { 
                     walkingIn = true
                     onWalkIn()
                     scope.launch {
-                        kotlinx.coroutines.delay(1000)
+                        kotlinx.coroutines.delay(800)
                         walkingIn = false
                     }
                 },
                 modifier = Modifier
-                    .weight(1f)
+                    .weight(1.2f)
                     .heightIn(min = ButtonDefaults.LargeContainerHeight),
                 shapes = ButtonGroupDefaults.connectedLeadingButtonShapes(),
                 colors = ToggleButtonDefaults.toggleButtonColors(
@@ -580,14 +533,13 @@ fun ExpressiveActions(
                 )
             }
 
-            // Walk Out Button with expressive shapes
             ToggleButton(
                 checked = walkingOut,
                 onCheckedChange = {
                     walkingOut = true
                     onWalkOut()
                     scope.launch {
-                        kotlinx.coroutines.delay(1000)
+                        kotlinx.coroutines.delay(800)
                         walkingOut = false
                     }
                 },
@@ -616,16 +568,19 @@ fun ExpressiveActions(
             }
         }
         
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(20.dp))
         
-        // View Insights button using FilledTonalButton with shape morphing
-        FilledTonalButton(
+        // Expressive Button with shape morphing for the main navigation action
+        Button(
             onClick = onViewInsights,
             modifier = Modifier
                 .fillMaxWidth()
                 .heightIn(min = ButtonDefaults.MediumContainerHeight),
-            shapes = ButtonDefaults.shapes(),
-            contentPadding = ButtonDefaults.contentPaddingFor(ButtonDefaults.MediumContainerHeight)
+            shapes = ButtonDefaults.shapes(), // This enables expressive shape morphing
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.tertiary,
+                contentColor = MaterialTheme.colorScheme.onTertiary
+            )
         ) {
             Icon(
                 imageVector = Icons.Outlined.Analytics,
@@ -634,8 +589,10 @@ fun ExpressiveActions(
             )
             Spacer(Modifier.size(ButtonDefaults.iconSpacingFor(ButtonDefaults.MediumContainerHeight)))
             Text(
-                text = "View Full Insights & Analytics",
-                style = ButtonDefaults.textStyleFor(ButtonDefaults.MediumContainerHeight)
+                text = "View Analytics & Insights",
+                style = ButtonDefaults.textStyleFor(ButtonDefaults.MediumContainerHeight).copy(
+                    fontWeight = FontWeight.Bold
+                )
             )
         }
     }
@@ -658,12 +615,9 @@ private fun WorkLogItem(
     
     ElevatedCard(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.elevatedCardColors(
-            containerColor = if (isWalkIn) 
-                MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.8f)
-            else 
-                MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.8f)
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
         )
     ) {
         ListItem(
@@ -684,15 +638,15 @@ private fun WorkLogItem(
             leadingContent = {
                 Surface(
                     shape = CircleShape,
-                    color = if (isWalkIn) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.size(44.dp)
+                    color = if (isWalkIn) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.secondaryContainer,
+                    modifier = Modifier.size(48.dp)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Icon(
                             imageVector = if (isWalkIn) Icons.Filled.Login else Icons.AutoMirrored.Filled.ExitToApp,
                             contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(22.dp)
+                            tint = if (isWalkIn) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.size(24.dp)
                         )
                     }
                 }
@@ -701,14 +655,15 @@ private fun WorkLogItem(
                 IconButton(
                     onClick = onDelete,
                     modifier = Modifier
-                        .background(Color.Black.copy(alpha = 0.05f), CircleShape)
-                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f))
+                        .size(42.dp)
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "Delete",
-                        modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
+                        modifier = Modifier.size(22.dp),
+                        tint = MaterialTheme.colorScheme.error
                     )
                 }
             },
