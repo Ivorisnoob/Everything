@@ -32,6 +32,8 @@ import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.EditCalendar
 import androidx.compose.material3.Badge
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ButtonGroup
+import androidx.compose.material3.ButtonGroupDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.DatePickerDialog
@@ -46,9 +48,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.ToggleButton
+import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -66,6 +67,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -171,17 +175,20 @@ fun InsightsScreen(
                 bottom = innerPadding.calculateBottomPadding() + 32.dp
             )
         ) {
-            // Range Selector using SingleChoiceSegmentedButtonRow
+            // Range Selector using ButtonGroup with connected ToggleButtons
             item {
-                SingleChoiceSegmentedButtonRow(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp)
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(
+                        ButtonGroupDefaults.ConnectedSpaceBetween
+                    )
                 ) {
                     rangeTypes.forEachIndexed { index, type ->
-                        SegmentedButton(
-                            selected = selectedRangeIndex == index,
-                            onClick = { 
+                        ToggleButton(
+                            checked = selectedRangeIndex == index,
+                            onCheckedChange = {
                                 selectedRangeIndex = index
                                 when (type) {
                                     RangeType.Week -> {
@@ -199,25 +206,26 @@ fun InsightsScreen(
                                     }
                                 }
                             },
-                            shape = SegmentedButtonDefaults.itemShape(
-                                index = index,
-                                count = rangeTypes.size
-                            ),
-                            icon = {
-                                SegmentedButtonDefaults.Icon(active = selectedRangeIndex == index) {
-                                    Icon(
-                                        imageVector = when (type) {
-                                            RangeType.Week -> Icons.Outlined.CalendarViewWeek
-                                            RangeType.Month -> Icons.Outlined.CalendarViewMonth
-                                            RangeType.Year -> Icons.Outlined.DateRange
-                                            RangeType.Custom -> Icons.Outlined.EditCalendar
-                                        },
-                                        contentDescription = null,
-                                        modifier = Modifier.size(SegmentedButtonDefaults.IconSize)
-                                    )
-                                }
+                            modifier = Modifier
+                                .weight(1f)
+                                .semantics { role = Role.RadioButton },
+                            shapes = when (index) {
+                                0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
+                                rangeTypes.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
+                                else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
                             }
                         ) {
+                            Icon(
+                                imageVector = when (type) {
+                                    RangeType.Week -> Icons.Outlined.CalendarViewWeek
+                                    RangeType.Month -> Icons.Outlined.CalendarViewMonth
+                                    RangeType.Year -> Icons.Outlined.DateRange
+                                    RangeType.Custom -> Icons.Outlined.EditCalendar
+                                },
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(Modifier.size(ToggleButtonDefaults.IconSpacing))
                             Text(type.name)
                         }
                     }
