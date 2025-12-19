@@ -31,6 +31,7 @@ import androidx.compose.material.icons.outlined.CalendarViewWeek
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.EditCalendar
 import androidx.compose.material3.Badge
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ButtonGroup
 import androidx.compose.material3.ButtonGroupDefaults
@@ -40,8 +41,10 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -152,7 +155,11 @@ fun InsightsScreen(
                         tooltip = { PlainTooltip { Text("Go back") } },
                         state = rememberTooltipState()
                     ) {
-                        IconButton(onClick = onBack) {
+                        // Expressive FilledTonalIconButton with shape morphing for back navigation
+                        FilledTonalIconButton(
+                            onClick = onBack,
+                            shapes = IconButtonDefaults.shapes() // Shape morphs on press
+                        ) {
                             Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                         }
                     }
@@ -315,7 +322,8 @@ fun InsightsScreen(
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
             confirmButton = {
-                TextButton(
+                // Expressive Button with shape morphing for confirm action
+                Button(
                     onClick = {
                         dateRangePickerState.selectedStartDateMillis?.let { startMillis ->
                             currentRangeStart = Instant.ofEpochMilli(startMillis)
@@ -328,13 +336,17 @@ fun InsightsScreen(
                                 .toLocalDate()
                         }
                         showDatePicker = false
-                    }
+                    },
+                    shapes = ButtonDefaults.shapes() // Shape morphing on press
                 ) {
                     Text("Confirm")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) {
+                TextButton(
+                    onClick = { showDatePicker = false },
+                    shapes = ButtonDefaults.shapes() // TextButton also gets shape morphing
+                ) {
                     Text("Cancel")
                 }
             },
@@ -617,12 +629,23 @@ private fun StatItem(
     color: Color,
     modifier: Modifier = Modifier
 ) {
+    // Parse value to animate it
+    val numericValue = value.toFloatOrNull() ?: 0f
+    val animatedValue by animateFloatAsState(
+        targetValue = numericValue,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "stat_$label"
+    )
+    
     Column(
         modifier = modifier.padding(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = value,
+            text = String.format(Locale.getDefault(), "%.1f", animatedValue),
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.ExtraBold,
             color = color

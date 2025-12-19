@@ -44,8 +44,10 @@ import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LargeFlexibleTopAppBar
 import androidx.compose.material3.LinearWavyProgressIndicator
 import androidx.compose.material3.ListItem
@@ -652,18 +654,20 @@ private fun WorkLogItem(
                 }
             },
             trailingContent = {
-                IconButton(
+                // Expressive FilledTonalIconButton with shape morphing for delete action
+                FilledTonalIconButton(
                     onClick = onDelete,
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f))
-                        .size(42.dp)
+                    modifier = Modifier.size(44.dp),
+                    shapes = IconButtonDefaults.shapes(), // Enables shape morphing on press
+                    colors = IconButtonDefaults.filledTonalIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.6f),
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
                 ) {
                     Icon(
                         imageVector = Icons.Default.Delete,
                         contentDescription = "Delete",
-                        modifier = Modifier.size(22.dp),
-                        tint = MaterialTheme.colorScheme.error
+                        modifier = Modifier.size(22.dp)
                     )
                 }
             },
