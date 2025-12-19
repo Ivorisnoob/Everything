@@ -56,7 +56,7 @@ If yes to both, open an issue describing:
 
 ```bash
 # Clone your fork
-git clone https://github.com/YOUR_USERNAME/everything.git
+git clone https://github.com/ivorisnoob/everything.git
 cd everything
 
 # Build
