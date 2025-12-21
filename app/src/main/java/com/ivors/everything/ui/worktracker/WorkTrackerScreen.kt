@@ -81,6 +81,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import com.ivors.everything.data.WorkLog
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.material.icons.outlined.History
@@ -92,7 +93,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
-import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import java.time.LocalDateTime
 import java.time.LocalTime
