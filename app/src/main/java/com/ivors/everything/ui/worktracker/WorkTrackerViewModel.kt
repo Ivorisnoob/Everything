@@ -9,17 +9,27 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneId
 
 class WorkTrackerViewModel(private val dao: WorkLogDao) : ViewModel() {
     
     private val _selectedDate = MutableStateFlow(LocalDate.now())
     val selectedDate: StateFlow<LocalDate> = _selectedDate
+    
+    /**
+     * Tracks the last event type ("IN" or "OUT") to determine which action is allowed next.
+     * null means no logs exist yet, so user can do either action.
+     */
+    val lastLogEventType: StateFlow<String?> = dao.getLastLog()
+        .map { it?.eventType }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
     
     val logsForSelectedDay: StateFlow<List<WorkLog>> = _selectedDate
         .flatMapLatest { date ->
@@ -98,6 +108,18 @@ class WorkTrackerViewModel(private val dao: WorkLogDao) : ViewModel() {
     fun walkOut() {
         viewModelScope.launch {
             dao.insert(WorkLog(timestamp = System.currentTimeMillis(), eventType = "OUT"))
+        }
+    }
+    
+    /**
+     * Add a missed entry with a custom date and time.
+     * @param dateTime The LocalDateTime of the missed entry.
+     * @param eventType The type of event: "IN" or "OUT".
+     */
+    fun addMissedEntry(dateTime: LocalDateTime, eventType: String) {
+        viewModelScope.launch {
+            val timestamp = dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+            dao.insert(WorkLog(timestamp = timestamp, eventType = eventType))
         }
     }
     

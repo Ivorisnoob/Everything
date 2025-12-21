@@ -30,4 +30,10 @@ interface WorkLogDao {
     
     @Query("DELETE FROM work_logs WHERE id = :id")
     suspend fun deleteById(id: Long)
+    
+    /**
+     * Get the most recent log entry to determine current state.
+     */
+    @Query("SELECT * FROM work_logs ORDER BY timestamp DESC LIMIT 1")
+    fun getLastLog(): Flow<WorkLog?>
 }

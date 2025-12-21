@@ -81,15 +81,28 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import com.ivors.everything.data.WorkLog
-import java.time.Instant
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.Today
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.rememberTimePickerState
+import java.time.LocalDateTime
+import java.time.LocalTime
 import java.time.ZoneId
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 import java.util.SortedMap
+import java.time.Instant
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -101,6 +114,10 @@ fun WorkTrackerScreen(
     val selectedDate by viewModel.selectedDate.collectAsState()
     val logs by viewModel.logsForSelectedDay.collectAsState()
     val weeklyHours by viewModel.weeklyWorkHours.collectAsState()
+    val lastLogEventType by viewModel.lastLogEventType.collectAsState()
+    
+    // State for missed entry dialog
+    var showMissedEntryDialog by remember { mutableStateOf(false) }
     
     val datePickerState = rememberDatePickerState(
         initialSelectedDateMillis = selectedDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
@@ -116,6 +133,17 @@ fun WorkTrackerScreen(
                 viewModel.selectDate(newDate)
             }
         }
+    }
+    
+    // Missed Entry Dialog
+    if (showMissedEntryDialog) {
+        MissedEntryDialog(
+            onDismiss = { showMissedEntryDialog = false },
+            onConfirm = { dateTime, eventType ->
+                viewModel.addMissedEntry(dateTime, eventType)
+                showMissedEntryDialog = false
+            }
+        )
     }
     
     Scaffold(
@@ -179,6 +207,8 @@ fun WorkTrackerScreen(
                     onWalkIn = { viewModel.walkIn() },
                     onWalkOut = { viewModel.walkOut() },
                     onViewInsights = onNavigateToInsights,
+                    onAddMissedEntry = { showMissedEntryDialog = true },
+                    lastLogEventType = lastLogEventType,
                     modifier = Modifier.padding(16.dp)
                 )
             }
@@ -488,11 +518,20 @@ fun ExpressiveActions(
     onWalkIn: () -> Unit,
     onWalkOut: () -> Unit,
     onViewInsights: () -> Unit,
+    onAddMissedEntry: () -> Unit,
+    lastLogEventType: String?,
     modifier: Modifier = Modifier
 ) {
     var walkingIn by remember { mutableStateOf(false) }
     var walkingOut by remember { mutableStateOf(false) }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
+    
+    // Determine if buttons should be enabled
+    // If lastLogEventType is null (no logs yet), both buttons are enabled
+    // If lastLogEventType is "IN", only OUT is enabled
+    // If lastLogEventType is "OUT", only IN is enabled
+    val canWalkIn = lastLogEventType != "IN"
+    val canWalkOut = lastLogEventType == "IN"
 
     Column(modifier = modifier.fillMaxWidth()) {
         // Proper ButtonGroup with connected ToggleButtons as per M3 docs
@@ -504,13 +543,16 @@ fun ExpressiveActions(
             ToggleButton(
                 checked = walkingIn,
                 onCheckedChange = { 
-                    walkingIn = true
-                    onWalkIn()
-                    scope.launch {
-                        kotlinx.coroutines.delay(800)
-                        walkingIn = false
+                    if (canWalkIn) {
+                        walkingIn = true
+                        onWalkIn()
+                        scope.launch {
+                            kotlinx.coroutines.delay(800)
+                            walkingIn = false
+                        }
                     }
                 },
+                enabled = canWalkIn,
                 modifier = Modifier
                     .weight(1.2f)
                     .heightIn(min = ButtonDefaults.LargeContainerHeight),
@@ -519,7 +561,9 @@ fun ExpressiveActions(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
                     checkedContainerColor = MaterialTheme.colorScheme.primary,
-                    checkedContentColor = MaterialTheme.colorScheme.onPrimary
+                    checkedContentColor = MaterialTheme.colorScheme.onPrimary,
+                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                 )
             ) {
                 Icon(
@@ -538,13 +582,16 @@ fun ExpressiveActions(
             ToggleButton(
                 checked = walkingOut,
                 onCheckedChange = {
-                    walkingOut = true
-                    onWalkOut()
-                    scope.launch {
-                        kotlinx.coroutines.delay(800)
-                        walkingOut = false
+                    if (canWalkOut) {
+                        walkingOut = true
+                        onWalkOut()
+                        scope.launch {
+                            kotlinx.coroutines.delay(800)
+                            walkingOut = false
+                        }
                     }
                 },
+                enabled = canWalkOut,
                 modifier = Modifier
                     .weight(1f)
                     .heightIn(min = ButtonDefaults.LargeContainerHeight),
@@ -553,7 +600,9 @@ fun ExpressiveActions(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                     contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                     checkedContainerColor = MaterialTheme.colorScheme.secondary,
-                    checkedContentColor = MaterialTheme.colorScheme.onSecondary
+                    checkedContentColor = MaterialTheme.colorScheme.onSecondary,
+                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                 )
             ) {
                 Icon(
@@ -570,7 +619,35 @@ fun ExpressiveActions(
             }
         }
         
-        Spacer(modifier = Modifier.height(20.dp))
+        Spacer(modifier = Modifier.height(12.dp))
+        
+        // Add Missed Entry Button
+        OutlinedButton(
+            onClick = onAddMissedEntry,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = ButtonDefaults.MediumContainerHeight),
+            shapes = ButtonDefaults.shapes(),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+            ),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.History,
+                contentDescription = null,
+                modifier = Modifier.size(ButtonDefaults.iconSizeFor(ButtonDefaults.MediumContainerHeight))
+            )
+            Spacer(Modifier.size(ButtonDefaults.iconSpacingFor(ButtonDefaults.MediumContainerHeight)))
+            Text(
+                text = "Add Missed Entry",
+                style = ButtonDefaults.textStyleFor(ButtonDefaults.MediumContainerHeight).copy(
+                    fontWeight = FontWeight.Medium
+                )
+            )
+        }
+        
+        Spacer(modifier = Modifier.height(12.dp))
         
         // Expressive Button with shape morphing for the main navigation action
         Button(
@@ -674,4 +751,173 @@ private fun WorkLogItem(
             colors = ListItemDefaults.colors(containerColor = Color.Transparent)
         )
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MissedEntryDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (LocalDateTime, String) -> Unit
+) {
+    var selectedDate by remember { mutableStateOf(LocalDate.now()) }
+    var selectedTime by remember { mutableStateOf(LocalTime.now()) }
+    var eventType by remember { mutableStateOf("IN") }
+    
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
+    
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = selectedDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+    )
+    
+    val timePickerState = rememberTimePickerState(
+        initialHour = selectedTime.hour,
+        initialMinute = selectedTime.minute
+    )
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        selectedDate = Instant.ofEpochMilli(millis)
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDate()
+                    }
+                    showDatePicker = false
+                }) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Cancel")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
+
+    if (showTimePicker) {
+        AlertDialog(
+            onDismissRequest = { showTimePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    selectedTime = LocalTime.of(timePickerState.hour, timePickerState.minute)
+                    showTimePicker = false
+                }) {
+                    Text("OK")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showTimePicker = false }) {
+                    Text("Cancel")
+                }
+            },
+            text = {
+                Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    TimePicker(state = timePickerState)
+                }
+            }
+        )
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add Missed Entry", fontWeight = FontWeight.Bold) },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    "Set the details for your missed activity log.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                
+                // Date Selection
+                OutlinedCard(
+                    onClick = { showDatePicker = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.outlinedCardColors(
+                        containerColor = Color.Transparent
+                    )
+                ) {
+                    ListItem(
+                        headlineContent = { Text("Date") },
+                        supportingContent = { Text(selectedDate.format(DateTimeFormatter.ofPattern("EEE, MMM d, yyyy"))) },
+                        leadingContent = { Icon(Icons.Outlined.Today, contentDescription = null) },
+                        trailingContent = { Text("Change", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge) },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                    )
+                }
+                
+                // Time Selection
+                OutlinedCard(
+                    onClick = { showTimePicker = true },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.outlinedCardColors(
+                        containerColor = Color.Transparent
+                    )
+                ) {
+                    ListItem(
+                        headlineContent = { Text("Time") },
+                        supportingContent = { Text(selectedTime.format(DateTimeFormatter.ofPattern("hh:mm a"))) },
+                        leadingContent = { Icon(Icons.Outlined.Schedule, contentDescription = null) },
+                        trailingContent = { Text("Change", color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelLarge) },
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent)
+                    )
+                }
+                
+                // Event Type Selection
+                Column {
+                    Text(
+                        "Activity Type",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(24.dp)
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(
+                                selected = eventType == "IN",
+                                onClick = { eventType = "IN" }
+                            )
+                            Text("Walk In", modifier = Modifier.padding(start = 4.dp))
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(
+                                selected = eventType == "OUT",
+                                onClick = { eventType = "OUT" }
+                            )
+                            Text("Out", modifier = Modifier.padding(start = 4.dp))
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = {
+                    onConfirm(LocalDateTime.of(selectedDate, selectedTime), eventType)
+                }
+            ) {
+                Text("Save Entry")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        },
+        shape = RoundedCornerShape(28.dp)
+    )
 }
