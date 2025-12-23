@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -29,6 +31,35 @@ class WorkTrackerViewModel(private val dao: WorkLogDao) : ViewModel() {
      */
     val lastLogEventType: StateFlow<String?> = dao.getLastLog()
         .map { it?.eventType }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    private val lastLog = dao.getLastLog()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    /**
+     * Ticker that emits every second to drive the live timer.
+     */
+    private val ticker = kotlinx.coroutines.flow.flow {
+        while (true) {
+            emit(System.currentTimeMillis())
+            delay(1000)
+        }
+    }
+
+    /**
+     * Flow that provides the duration of the current active session.
+     * null if the user is not clocked in.
+     */
+    val activeSessionDuration: StateFlow<Duration?> = lastLog
+        .flatMapLatest { log ->
+            if (log?.eventType == "IN") {
+                ticker.map { now ->
+                    Duration.ofMillis(now - log.timestamp)
+                }
+            } else {
+                kotlinx.coroutines.flow.flowOf(null)
+            }
+        }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
     
     val logsForSelectedDay: StateFlow<List<WorkLog>> = _selectedDate
@@ -53,7 +84,18 @@ class WorkTrackerViewModel(private val dao: WorkLogDao) : ViewModel() {
             for (i in 0..6) {
                 val date = sevenDaysAgo.plusDays(i.toLong())
                 val dayLogs = logsByDay[date] ?: emptyList()
-                hourlyMap[date] = calculateHours(dayLogs)
+                var hours = calculateHours(dayLogs)
+                
+                // If this is today and we are clocked in, include active time
+                if (date == LocalDate.now()) {
+                    val last = allLogs.maxByOrNull { it.timestamp }
+                    if (last?.eventType == "IN") {
+                        val activeMillis = System.currentTimeMillis() - last.timestamp
+                        hours += activeMillis / (1000.0 * 60 * 60)
+                    }
+                }
+                
+                hourlyMap[date] = hours
             }
             kotlinx.coroutines.flow.flowOf(hourlyMap)
         }

@@ -5,10 +5,15 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 
-@Database(entities = [WorkLog::class], version = 1, exportSchema = false)
+@Database(
+    entities = [WorkLog::class, Habit::class, HabitCompletion::class],
+    version = 2,
+    exportSchema = false
+)
 abstract class AppDatabase : RoomDatabase() {
     
     abstract fun workLogDao(): WorkLogDao
+    abstract fun habitDao(): HabitDao
     
     companion object {
         @Volatile
@@ -20,7 +25,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "everything_database"
-                ).build()
+                )
+                .fallbackToDestructiveMigration()
+                .build()
                 INSTANCE = instance
                 instance
             }

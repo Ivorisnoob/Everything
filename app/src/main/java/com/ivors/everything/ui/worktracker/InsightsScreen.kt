@@ -18,7 +18,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -41,6 +43,7 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -182,20 +185,19 @@ fun InsightsScreen(
                 bottom = innerPadding.calculateBottomPadding() + 32.dp
             )
         ) {
-            // Range Selector using ButtonGroup with connected ToggleButtons
+            // Range Selector - Horizontally scrollable to avoid wrapping
             item {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
                         .padding(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(
-                        ButtonGroupDefaults.ConnectedSpaceBetween
-                    )
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     rangeTypes.forEachIndexed { index, type ->
-                        ToggleButton(
-                            checked = selectedRangeIndex == index,
-                            onCheckedChange = {
+                        FilterChip(
+                            selected = selectedRangeIndex == index,
+                            onClick = {
                                 selectedRangeIndex = index
                                 when (type) {
                                     RangeType.Week -> {
@@ -213,28 +215,20 @@ fun InsightsScreen(
                                     }
                                 }
                             },
-                            modifier = Modifier
-                                .weight(1f)
-                                .semantics { role = Role.RadioButton },
-                            shapes = when (index) {
-                                0 -> ButtonGroupDefaults.connectedLeadingButtonShapes()
-                                rangeTypes.lastIndex -> ButtonGroupDefaults.connectedTrailingButtonShapes()
-                                else -> ButtonGroupDefaults.connectedMiddleButtonShapes()
+                            label = { Text(type.name) },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = when (type) {
+                                        RangeType.Week -> Icons.Outlined.CalendarViewWeek
+                                        RangeType.Month -> Icons.Outlined.CalendarViewMonth
+                                        RangeType.Year -> Icons.Outlined.DateRange
+                                        RangeType.Custom -> Icons.Outlined.EditCalendar
+                                    },
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
                             }
-                        ) {
-                            Icon(
-                                imageVector = when (type) {
-                                    RangeType.Week -> Icons.Outlined.CalendarViewWeek
-                                    RangeType.Month -> Icons.Outlined.CalendarViewMonth
-                                    RangeType.Year -> Icons.Outlined.DateRange
-                                    RangeType.Custom -> Icons.Outlined.EditCalendar
-                                },
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(Modifier.size(ToggleButtonDefaults.IconSpacing))
-                            Text(type.name)
-                        }
+                        )
                     }
                 }
             }

@@ -103,6 +103,8 @@ import java.time.format.TextStyle
 import java.util.Locale
 import java.util.SortedMap
 import java.time.Instant
+import java.time.Duration
+import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -115,6 +117,7 @@ fun WorkTrackerScreen(
     val logs by viewModel.logsForSelectedDay.collectAsState()
     val weeklyHours by viewModel.weeklyWorkHours.collectAsState()
     val lastLogEventType by viewModel.lastLogEventType.collectAsState()
+    val activeSessionDuration by viewModel.activeSessionDuration.collectAsState()
     
     // State for missed entry dialog
     var showMissedEntryDialog by remember { mutableStateOf(false) }
@@ -178,14 +181,7 @@ fun WorkTrackerScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f),
-                            MaterialTheme.colorScheme.surface
-                        )
-                    )
-                ),
+                .background(MaterialTheme.colorScheme.surface),
             contentPadding = PaddingValues(
                 top = innerPadding.calculateTopPadding(),
                 bottom = innerPadding.calculateBottomPadding() + 32.dp,
@@ -193,6 +189,16 @@ fun WorkTrackerScreen(
                 end = 0.dp
             )
         ) {
+            // Active Session Card (If clocked in)
+            activeSessionDuration?.let { duration ->
+                item {
+                    ActiveSessionCard(
+                        duration = duration,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                }
+            }
+
             // Insights Section
             item {
                 WorkInsights(
@@ -920,4 +926,61 @@ fun MissedEntryDialog(
         },
         shape = RoundedCornerShape(28.dp)
     )
+}
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun ActiveSessionCard(
+    duration: Duration,
+    modifier: Modifier = Modifier
+) {
+    val hours = duration.toHours()
+    val minutes = duration.toMinutesPart()
+    val seconds = duration.toSecondsPart()
+    
+    val timeText = String.format("%02d:%02d:%02d", hours, minutes, seconds)
+    
+    ElevatedCard(
+        modifier = modifier
+            .fillMaxWidth()
+            .animateContentSize(),
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.1f),
+                modifier = Modifier.size(56.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Outlined.Schedule,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(20.dp))
+            Column {
+                Text(
+                    text = "Current Session",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = timeText,
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    fontWeight = FontWeight.Black
+                )
+            }
+        }
+    }
 }
