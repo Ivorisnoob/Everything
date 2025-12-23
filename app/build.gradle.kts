@@ -15,8 +15,8 @@ android {
         applicationId = "com.ivors.everything"
         minSdk = 33
         targetSdk = 36
-        versionCode = 2
-        versionName = "2.0"
+        versionCode = 3
+        versionName = "3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
