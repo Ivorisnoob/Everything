@@ -37,8 +37,6 @@ import androidx.compose.material.icons.outlined.List
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.ShortNavigationBar
-import androidx.compose.material3.ShortNavigationBarItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -46,8 +44,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.HorizontalFloatingToolbar
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.FloatingToolbarDefaults
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.Column
+import androidx.compose.ui.unit.dp
+import androidx.compose.material3.MaterialTheme
 
 class MainActivity : ComponentActivity() {
+    @OptIn(ExperimentalMaterial3ExpressiveApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -69,67 +78,13 @@ class MainActivity : ComponentActivity() {
                 val navController = rememberNavController()
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val currentDestination = navBackStackEntry?.destination?.route
+                val showToolbar = currentDestination in listOf("tracker", "habits", "settings")
+                var toolbarExpanded by remember { mutableStateOf(true) }
 
-                Scaffold(
-                    bottomBar = {
-                        val showBottomBar = currentDestination in listOf("tracker", "habits", "settings")
-                        if (showBottomBar) {
-                            ShortNavigationBar {
-                                ShortNavigationBarItem(
-                                    selected = currentDestination == "tracker",
-                                    onClick = { 
-                                        if (currentDestination != "tracker") {
-                                            navController.navigate("tracker") {
-                                                popUpTo("tracker") { inclusive = true }
-                                            }
-                                        }
-                                    },
-                                    icon = { 
-                                        Icon(
-                                            if (currentDestination == "tracker") Icons.Filled.Home else Icons.Outlined.Home,
-                                            contentDescription = "Work"
-                                        ) 
-                                    },
-                                    label = { Text("Work") }
-                                )
-                                ShortNavigationBarItem(
-                                    selected = currentDestination == "habits",
-                                    onClick = {
-                                        if (currentDestination != "habits") {
-                                            navController.navigate("habits") {
-                                                launchSingleTop = true
-                                            }
-                                        }
-                                    },
-                                    icon = { 
-                                        Icon(
-                                            if (currentDestination == "habits") Icons.Filled.List else Icons.Outlined.List,
-                                            contentDescription = "Habits"
-                                        ) 
-                                    },
-                                    label = { Text("Habits") }
-                                )
-                                ShortNavigationBarItem(
-                                    selected = currentDestination == "settings",
-                                    onClick = {
-                                        if (currentDestination != "settings") {
-                                            navController.navigate("settings") {
-                                                launchSingleTop = true
-                                            }
-                                        }
-                                    },
-                                    icon = { 
-                                        Icon(
-                                            if (currentDestination == "settings") Icons.Filled.Settings else Icons.Outlined.Settings,
-                                            contentDescription = "Settings"
-                                        ) 
-                                    },
-                                    label = { Text("Settings") }
-                                )
-                            }
-                        }
-                    }
-                ) { innerPadding ->
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Scaffold(
+                        modifier = Modifier.fillMaxSize()
+                    ) { innerPadding ->
                     NavHost(
                         navController = navController,
                         startDestination = "tracker",
@@ -221,6 +176,118 @@ class MainActivity : ComponentActivity() {
                                 modifier = Modifier.fillMaxSize()
                             )
                         }
+                    }
+                }
+                
+                // HorizontalFloatingToolbar for navigation
+                if (showToolbar) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomCenter)
+                            .padding(bottom = 16.dp)
+                    ) {
+                        HorizontalFloatingToolbar(
+                            expanded = toolbarExpanded,
+                            floatingActionButton = {
+                                FloatingToolbarDefaults.VibrantFloatingActionButton(
+                                    onClick = { toolbarExpanded = !toolbarExpanded }
+                                ) {
+                                    Icon(
+                                        if (toolbarExpanded) Icons.Filled.Home else Icons.Outlined.Home,
+                                        contentDescription = "Toggle Menu"
+                                    )
+                                }
+                            },
+                            content = {
+                                // Work navigation item
+                                IconButton(
+                                    onClick = { 
+                                        if (currentDestination != "tracker") {
+                                            navController.navigate("tracker") {
+                                                popUpTo("tracker") { inclusive = true }
+                                            }
+                                        }
+                                    }
+                                ) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Icon(
+                                            if (currentDestination == "tracker") Icons.Filled.Home else Icons.Outlined.Home,
+                                            contentDescription = "Work",
+                                            tint = if (currentDestination == "tracker") 
+                                                MaterialTheme.colorScheme.primary 
+                                            else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Text(
+                                            "Work",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = if (currentDestination == "tracker") 
+                                                MaterialTheme.colorScheme.primary 
+                                            else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                                
+                                Spacer(modifier = Modifier.width(8.dp))
+                                
+                                // Habits navigation item
+                                IconButton(
+                                    onClick = {
+                                        if (currentDestination != "habits") {
+                                            navController.navigate("habits") {
+                                                launchSingleTop = true
+                                            }
+                                        }
+                                    }
+                                ) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Icon(
+                                            if (currentDestination == "habits") Icons.Filled.List else Icons.Outlined.List,
+                                            contentDescription = "Habits",
+                                            tint = if (currentDestination == "habits") 
+                                                MaterialTheme.colorScheme.primary 
+                                            else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Text(
+                                            "Habits",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = if (currentDestination == "habits") 
+                                                MaterialTheme.colorScheme.primary 
+                                            else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                                
+                                Spacer(modifier = Modifier.width(8.dp))
+                                
+                                // Settings navigation item
+                                IconButton(
+                                    onClick = {
+                                        if (currentDestination != "settings") {
+                                            navController.navigate("settings") {
+                                                launchSingleTop = true
+                                            }
+                                        }
+                                    }
+                                ) {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Icon(
+                                            if (currentDestination == "settings") Icons.Filled.Settings else Icons.Outlined.Settings,
+                                            contentDescription = "Settings",
+                                            tint = if (currentDestination == "settings") 
+                                                MaterialTheme.colorScheme.primary 
+                                            else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                        Text(
+                                            "Settings",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = if (currentDestination == "settings") 
+                                                MaterialTheme.colorScheme.primary 
+                                            else MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                        )
                     }
                 }
             }
