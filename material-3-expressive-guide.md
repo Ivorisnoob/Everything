@@ -707,11 +707,139 @@ Dynamic color schemes automatically adapt to the user's wallpaper and system pre
 
 ### 2.2 Typography
 
-The `Typography` class defines the typographic hierarchy for your app, ensuring consistent text styling across all components.
+Material 3 Expressive introduces an enhanced typography system with **30 text styles**: 15 base styles plus 15 emphasized variants. The type scale uses five categories (Display, Headline, Title, Body, Label) each with three sizes (Large, Medium, Small).
+
+**Key Changes in M3 Expressive Typography:**
+- **Emphasized Styles:** New `*Emphasized` variants add dynamism and personality to draw attention to important content
+- **Variable Font Support:** Roboto Flex enables customization via font axes (weight, width, slant, optical size)
+- **Simplified Scale:** Five clear categories replace the previous more complex hierarchy
+
+#### Type Scale Categories
+
+| Category | Purpose | Sizes |
+|----------|---------|-------|
+| **Display** | Large, short strings for hero information and significant metrics | Large (57sp), Medium (45sp), Small (36sp) |
+| **Headline** | Short, important text or numerals; supports expressive fonts | Large (32sp), Medium (28sp), Small (24sp) |
+| **Title** | Medium-emphasis text, shorter in length | Large (22sp), Medium (16sp), Small (14sp) |
+| **Body** | Long-form writing, paragraphs, content text | Large (16sp), Medium (14sp), Small (12sp) |
+| **Label** | Call to action in buttons, tabs, dialogs, cards | Large (14sp), Medium (12sp), Small (11sp) |
+
+#### Emphasized Styles
+
+Emphasized versions of each style add visual weight and personality. Use them to:
+- Create clearer division of content
+- Draw users' eyes to relevant material
+- Add visual hierarchy and emphasis
+
+```kotlin
+// Access emphasized styles via MaterialTheme
+Text(
+    text = "Important Header",
+    style = MaterialTheme.typography.headlineLargeEmphasized
+)
+```
+
+#### Defining Typography
+
+```kotlin
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Typography
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+
+// Standard Typography (15 base styles)
+val Typography = Typography(
+    displayLarge = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Normal,
+        fontSize = 57.sp,
+        lineHeight = 64.sp,
+        letterSpacing = (-0.25).sp
+    ),
+    // ... other styles
+    bodyLarge = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Normal,
+        fontSize = 16.sp,
+        lineHeight = 24.sp,
+        letterSpacing = 0.5.sp
+    ),
+    labelLarge = TextStyle(
+        fontFamily = FontFamily.Default,
+        fontWeight = FontWeight.Medium,
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
+        letterSpacing = 0.1.sp
+    )
+)
+
+// Expressive Typography with Emphasized Styles (30 styles total)
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+val ExpressiveTypography = Typography(
+    // Base styles
+    displayLarge = Typography.displayLarge,
+    bodyLarge = Typography.bodyLarge,
+    // ... other base styles
+
+    // Emphasized styles - use SemiBold for visual impact
+    displayLargeEmphasized = Typography.displayLarge.copy(fontWeight = FontWeight.SemiBold),
+    bodyLargeEmphasized = Typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+    // ... other emphasized styles
+)
+```
+
+#### Variable Fonts with Roboto Flex
+
+M3 Expressive recommends Roboto Flex for its variable font capabilities. Variable fonts allow customization via axes:
+
+| Axis | Description | Range |
+|------|-------------|-------|
+| `wght` | Weight | 100-1000 |
+| `wdth` | Width | 25-151 |
+| `slnt` | Slant | -10 to 0 |
+| `opsz` | Optical Size | 8-144 |
+| `GRAD` | Grade | -200 to 150 |
+| `XTRA` | Extra width | 323-603 |
+
+```kotlin
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontVariation
+
+// Variable font requires API 26+ (Android O)
+@RequiresApi(Build.VERSION_CODES.O)
+val RobotoFlexFamily = FontFamily(
+    Font(
+        R.font.robotoflex_variable,
+        variationSettings = FontVariation.Settings(
+            FontVariation.weight(400),
+            FontVariation.width(100f),
+            FontVariation.slant(0f)
+        )
+    )
+)
+
+// Create emphasized variant with different weight
+@RequiresApi(Build.VERSION_CODES.O)
+val RobotoFlexEmphasized = FontFamily(
+    Font(
+        R.font.robotoflex_variable,
+        variationSettings = FontVariation.Settings(
+            FontVariation.weight(600),
+            FontVariation.width(100f)
+        )
+    )
+)
+```
+
+**Note:** Variable fonts require Compose UI 1.3.0+ and Android O (API 26) or above. For older devices, provide a fallback to standard font files.
 
 **See also:**
 - [MaterialTheme](#materialtheme) - Apply typography to your app
 - [ProvideTextStyle](#providetextstyle) - Override text styles locally
+- [MaterialExpressiveTheme](#materialexpressivetheme) - Use expressive typography with emphasized styles
 
 ### 2.3 Shapes
 

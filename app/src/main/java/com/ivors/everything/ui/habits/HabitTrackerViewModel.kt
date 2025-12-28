@@ -49,7 +49,7 @@ class HabitTrackerViewModel(private val dao: HabitDao) : ViewModel() {
             val currentCount = dao.getCompletionCountForHabitOnDate(habitId, dateStr)
             
             // For now, toggle means add if 0, else we can think about multiple completions
-            // For simplicity, let's just add one more or if we want to "untoggle", we delete all for that day
+            // For simplicity, let's just add one more or if we want to "untoggle", we delete all for that day, surely this won't cause any bugs right?
             if (currentCount > 0) {
                 dao.deleteCompletion(habitId, dateStr)
             } else {
@@ -70,7 +70,7 @@ class HabitTrackerViewModel(private val dao: HabitDao) : ViewModel() {
                 Habit(
                     name = name,
                     icon = icon,
-                    color = 0, // Placeholder
+                    color = 0, // Placeholder for color
                     frequency = frequency
                 )
             )
